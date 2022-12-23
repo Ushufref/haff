@@ -1,0 +1,114 @@
+import heapq #модуль для очереди с приоритетами
+from heapq import heappop, heappush #heappop возвращает и удаляет наименьший элемент, heappush добавляет какое-то значение
+
+#дерево без дочерних элементов
+def isLeaf(root):
+    return root.left is None and root.right is None
+
+
+# узел дерева
+class Node:
+    def __init__(self, ch, freq, left=None, right=None):
+        self.ch = ch #элемент
+        self.freq = freq #частота
+        self.left = left
+        self.right = right
+
+    #переопределяем '<', чтобы он сравнивал частоту
+    def __lt__(self, other):
+        return self.freq < other.freq
+
+
+# проходим по дереву и сохраняем коды в словаре
+def encode(root, s, huffman_code):
+    if root is None:
+        return
+
+    # обнаружил листовой узел
+    if isLeaf(root):
+        huffman_code[root.ch] = s if len(s) > 0 else '1'
+
+    encode(root.left, s + '0', huffman_code)
+    encode(root.right, s + '1', huffman_code)
+
+
+def decode(root, index, s):
+    if root is None:
+        return
+
+    # обнаружил листовой узел
+    if isLeaf(root):
+        print(root.ch, end='')
+        return index
+
+    index = index + 1
+    root = root.left if s[index] == '0' else root.right
+    return decode(root, index, s)
+
+
+# строим дерево Хаффмана и декодирует заданный входной текст
+def buildHuffmanTree(text):
+    #пустая строка
+    if len(text) == 0:
+        return
+
+    # подсчитываем частоту появления каждого символа
+    # и сохраняем его в словаре
+    freq = {i: text.count(i) for i in set(text)}
+
+    # создаем приоритетную очередь для хранения активных узлов дерева Хаффмана.
+    pq = [Node(k, v) for k, v in freq.items()]
+    heapq.heapify(pq)
+
+    # делать до тех пор, пока в queue не окажется более одного узла
+    while len(pq) != 1:
+        # Удалить два узла с наивысшим приоритетом
+        # (самая низкая частота) из queue
+
+        left = heappop(pq)
+        right = heappop(pq)
+
+        # создает новый внутренний узел с этими двумя узлами в качестве дочерних и
+        # с частотой, равной сумме частот двух узлов.
+        # Добавьте новый узел в приоритетную очередь.
+
+        total = left.freq + right.freq
+        heappush(pq, Node(None, total, left, right))
+
+    # `root` хранит указатель на корень дерева Хаффмана.
+    root = pq[0]
+
+    # проходит по дереву Хаффмана и сохраняет коды Хаффмана в словаре.
+    huffmanCode = {}
+    encode(root, '', huffmanCode)
+
+    file = open('C:\\Users\\fedor\\PycharmProjects\\pythonProject\\j.csv', 'w')
+    file.write('размер словаря: ' + str(len(huffmanCode)) + '\n')
+    file.write('словарь: ' + str(huffmanCode) + '\n')
+    print('размер словаря: ', len(huffmanCode))
+    print('словарь: ', huffmanCode)
+    # закодированная строка
+    s = ''
+    for c in text:
+        s += huffmanCode.get(c)
+    file.write('закодированная строка: ' + str(s) + '\n')
+    print('закодированная строка: ', s)
+    print('декодированная строка: ', end=' ')
+
+    if isLeaf(root):
+        #для ввода типа a, aa, aaa и т. д.
+        while root.freq > 0:
+            print(root.ch, end='')
+            root.freq = root.freq - 1
+    else:
+        # снова пересекают дерево Хаффмана, и на этот раз
+        # декодирует закодированную строку
+        index = -1
+        while index < len(s) - 1:
+            index = decode(root, index, s)
+
+
+# реализация
+file = open('C:\\Users\\fedor\\PycharmProjects\\pythonProject\\j.csv')
+text = file.readline()
+buildHuffmanTree(text)
